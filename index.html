@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase</title>
+    <style>
+        body {
+            background-image: url(https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg?cs=srgb&dl=pexels-pixabay-531880.jpg&fm=jpg);
+            /* text-align: center; */
+            margin: 0px auto;
+            color: aliceblue;
+            font-family: Arial, sans-serif;
+
+        }
+
+        h1 {
+            text-align: center;
+            color: rgb(15, 74, 5);
+        }
+
+        #auth-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            /* justify-content: baseline; */
+            /* align-items: center; */
+            margin: 0px auto;
+            height: auto;
+            padding: 30px;
+            width: 190px;
+            border-radius: 10px;
+            border: 2px solid white;
+            background-color: rgba(240, 248, 255, 0.502);
+            backdrop-filter: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        input {
+            padding: 6px;
+            border-radius: 5px;
+            border: 2px solid rgb(248, 248, 248);
+
+        }
+
+        button {
+            padding: 6px;
+            border-radius: 3px;
+            border: 2px solid rgb(243, 239, 239);
+            background-color: cadetblue;
+            color: aliceblue;
+        }
+
+        .google {
+            background-color: aliceblue;
+            color: rgba(0, 0, 0, 0.808);
+            /* background-color: rgb(54, 54, 193); */
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>supabase prectice Day 1</h1>
+
+    <div id="auth-section">
+        <h1>welcome</h1>
+        <!-- <form action="" id="authForm"> -->
+        <label for="email">Enter your Email</label>
+        <input type="email" id="email" placeholder="contact@example.com">
+        <label for="password">password</label>
+        <input type="password" id="password" placeholder="pasword">
+        <button type="button">log In</button>
+        <button type="button" class="google">contineu with google</button>
+        <!-- </form> -->
+    </div>
+
+    <!-- loged user -->
+    <div id="user-section" class="hidden">
+        <h3 id="user"> welcome <span id="user-email"></span></h3>
+        <input type="text" id="username" placeholder="enter yourname">
+        <button id="logoutbtn">logout</button>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+
+    <script>
+        const SUPABASE_URL = "https://smdomndufuewmhspepjh.supabase.co"
+        const SUPABASE_KEY = "sb_publishable_TT3VnAi86tpbLHJ07DC4aQ_BxkxYbB-"
+        const client = supabse.creatClient(SUPABASE_URL, SUPABASE_KEY)
+
+        // DOM menipulation //
+        const authSection = document.getElementById("auth-section")
+        const userSection = document.getElementById("user-section")
+        const userEmail = document.getElementById("email")
+    </script>
+</body>
+
+</html>
