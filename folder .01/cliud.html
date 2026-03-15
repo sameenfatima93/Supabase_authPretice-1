@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase — Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        /* ══════════════════════════════════════
+           RESET & BASE
+        ══════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green:        #3ecf8e;
+            --green-dark:   #2bb378;
+            --green-glow:   rgba(62, 207, 142, 0.35);
+            --glass-bg:     rgba(8, 18, 12, 0.60);
+            --glass-border: rgba(62, 207, 142, 0.20);
+            --text:         #e8f5ee;
+            --text-muted:   rgba(232, 245, 238, 0.50);
+            --input-bg:     rgba(255, 255, 255, 0.06);
+            --input-border: rgba(255, 255, 255, 0.13);
+            --input-focus:  rgba(62, 207, 142, 0.55);
+            --shadow:       0 32px 80px rgba(0, 0, 0, 0.60);
+        }
+
+        html, body {
+            min-height: 100vh;
+            font-family: 'Sora', sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* ══════════════════════════════════════
+           BACKGROUND
+        ══════════════════════════════════════ */
+        body {
+            background:
+                radial-gradient(ellipse 80% 60% at 15% 5%,  rgba(62,207,142,0.13) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 85% 95%, rgba(62,207,142,0.09) 0%, transparent 55%),
+                url('https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg?cs=srgb&dl=pexels-pixabay-531880.jpg&fm=jpg')
+                center / cover no-repeat fixed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 16px;
+            position: relative;
+        }
+
+        /* Dark overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 12, 6, 0.72);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Floating green orb top-right */
+        body::after {
+            content: '';
+            position: fixed;
+            width: 520px; height: 520px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(62,207,142,0.07) 0%, transparent 70%);
+            top: -130px; right: -130px;
+            animation: orb-drift 14s ease-in-out infinite alternate;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes orb-drift {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(-50px, 70px) scale(1.12); }
+        }
+
+        .orb2 {
+            position: fixed;
+            width: 380px; height: 380px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(62,207,142,0.05) 0%, transparent 70%);
+            bottom: -100px; left: -100px;
+            animation: orb-drift 18s ease-in-out infinite alternate-reverse;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════
+           PAGE LOGO
+        ══════════════════════════════════════ */
+        .page-title {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            margin-bottom: 28px;
+            animation: fadeDown .55s ease both;
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 11px;
+            margin-bottom: 7px;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: var(--green);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 24px var(--green-glow);
+            flex-shrink: 0;
+        }
+
+        .page-title h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.6px;
+            color: #fff;
+            line-height: 1;
+        }
+        .page-title h1 span { color: var(--green); }
+
+        .page-title p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 300;
+            letter-spacing: 0.4px;
+        }
+
+        /* ══════════════════════════════════════
+           CSS-ONLY TAB SYSTEM
+           Radio inputs sit BEFORE .auth-card
+           so the general sibling selector (~) reaches it
+        ══════════════════════════════════════ */
+        #tab-login, #tab-signup { display: none; }
+
+        .auth-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            animation: fadeUp .65s ease both .08s;
+        }
+
+        /* ── CARD ── */
+        .auth-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Top glow line */
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 18%; right: 18%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--green), transparent);
+            z-index: 1;
+        }
+
+        /* ── TAB BAR ── */
+        .tab-bar {
+            display: flex;
+            background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding: 5px 5px 0;
+            gap: 4px;
+        }
+
+        .tab-label {
+            flex: 1;
+            padding: 11px 0 13px;
+            text-align: center;
+            font-family: 'Sora', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            transition: color .2s, background .2s;
+            user-select: none;
+            position: relative;
+        }
+
+        /* Bottom indicator line */
+        .tab-label::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 12%; right: 12%;
+            height: 2px;
+            background: var(--green);
+            border-radius: 2px 2px 0 0;
+            opacity: 0;
+            transition: opacity .2s;
+        }
+
+        /* Active states via :checked ~ */
+        #tab-login:checked  ~ .auth-card .tab-bar .lbl-login,
+        #tab-signup:checked ~ .auth-card .tab-bar .lbl-signup {
+            color: var(--green);
+            font-weight: 600;
+            background: rgba(62,207,142,0.07);
+        }
+
+        #tab-login:checked  ~ .auth-card .tab-bar .lbl-login::after,
+        #tab-signup:checked ~ .auth-card .tab-bar .lbl-signup::after {
+            opacity: 1;
+        }
+
+        /* ── PANELS ── */
+        .panels { padding: 28px 32px 32px; }
+        .panel  { display: none; }
+
+        #tab-login:checked  ~ .auth-card .panels .panel-login  { display: block; }
+        #tab-signup:checked ~ .auth-card .panels .panel-signup { display: block; }
+
+        /* ── PANEL HEADER ── */
+        .panel-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .panel-header h2 {
+            font-size: 21px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+            letter-spacing: -0.3px;
+        }
+
+        .panel-header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        /* ══════════════════════════════════════
+           FORM FIELDS
+        ══════════════════════════════════════ */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 13px;
+            font-size: 14px;
+            opacity: 0.42;
+            pointer-events: none;
+            transition: opacity .2s;
+            line-height: 1;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 14px 12px 40px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 11px;
+            font-family: 'Sora', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text);
+            outline: none;
+            transition: border-color .22s, background .22s, box-shadow .22s;
+            caret-color: var(--green);
+            -webkit-appearance: none;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.22);
+            font-weight: 300;
+        }
+
+        input:focus {
+            border-color: var(--input-focus);
+            background: rgba(255, 255, 255, 0.10);
+            box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.10);
+        }
+
+        .input-wrap:focus-within .input-icon { opacity: 0.85; }
+
+        /* ── FORGOT LINK ── */
+        .forgot-row {
+            text-align: right;
+            margin: -4px 0 18px;
+        }
+
+        .forgot-link {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--green);
+            text-decoration: none;
+            opacity: 0.82;
+            transition: opacity .15s;
+        }
+        .forgot-link:hover { opacity: 1; text-decoration: underline; }
+
+        /* ══════════════════════════════════════
+           BUTTONS
+        ══════════════════════════════════════ */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 13px;
+            background: var(--green);
+            color: #071a0e;
+            border: none;
+            border-radius: 11px;
+            font-family: 'Sora', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .2s, transform .15s, box-shadow .2s;
+            letter-spacing: 0.1px;
+            box-shadow: 0 4px 22px var(--green-glow);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.13) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--green-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px var(--green-glow);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Google button */
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text);
+            border: 1px solid var(--input-border);
+            border-radius: 11px;
+            font-family: 'Sora', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background .2s, border-color .2s, transform .15s;
+        }
+
+        .btn-google:hover {
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.28);
+            transform: translateY(-1px);
+        }
+
+        .btn-google:active { transform: translateY(0); }
+
+        .g-badge {
+            width: 20px; height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: #4285f4;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .divider-line { flex: 1; height: 1px; background: var(--input-border); }
+
+        .divider span {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* ── CARD FOOTER ── */
+        .card-footer-note {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .card-footer-note a,
+        .switch-label {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .card-footer-note a:hover,
+        .switch-label:hover { text-decoration: underline; }
+
+        /* ══════════════════════════════════════
+           ANIMATIONS
+        ══════════════════════════════════════ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(22px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0);     }
+        }
+
+        /* ══════════════════════════════════════
+           SCROLLBAR
+        ══════════════════════════════════════ */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(62,207,142,0.28); border-radius: 3px; }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════════════ */
+        @media (max-width: 480px) {
+            .panels { padding: 22px 20px 26px; }
+            body    { padding: 20px 12px; }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Decorative orb bottom-left -->
+    <div class="orb2"></div>
+
+    <!-- ══════════════════════════════════════
+         LOGO
+    ══════════════════════════════════════ -->
+    <div class="page-title">
+        <div class="logo-row">
+            <div class="logo-icon">⚡</div>
+            <h1><span>Supa</span>base</h1>
+        </div>
+        <p>Practice Day 1 — Authentication</p>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         AUTH CARD
+         Radio inputs MUST be direct previous
+         siblings of .auth-card for ~ to work
+    ══════════════════════════════════════ -->
+    <div class="auth-wrapper">
+
+        <input type="radio" name="auth-tab" id="tab-login"  checked>
+        <input type="radio" name="auth-tab" id="tab-signup">
+
+        <div class="auth-card">
+
+            <!-- TAB BAR -->
+            <div class="tab-bar">
+                <label class="tab-label lbl-login"  for="tab-login">Sign In</label>
+                <label class="tab-label lbl-signup" for="tab-signup">Sign Up</label>
+            </div>
+
+            <!-- PANELS -->
+            <div class="panels">
+
+                <!-- ────────────────────────────
+                     SIGN IN  ·  2 fields
+                ──────────────────────────── -->
+                <div class="panel panel-login">
+
+                    <div class="panel-header">
+                        <h2>Welcome back 👋</h2>
+                        <p>Sign in to your account to continue</p>
+                    </div>
+
+                    <!-- 1. Email -->
+                    <div class="field">
+                        <label for="login-email">Email address</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">✉️</span>
+                            <input
+                                type="email"
+                                id="login-email"
+                                placeholder="you@example.com"
+                                autocomplete="email"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- 2. Password -->
+                    <div class="field">
+                        <label for="login-password">Password</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">🔒</span>
+                            <input
+                                type="password"
+                                id="login-password"
+                                placeholder="••••••••"
+                                autocomplete="current-password"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="forgot-row">
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="button" class="btn-primary">Sign In</button>
+
+                    <div class="divider">
+                        <div class="divider-line"></div>
+                        <span>or continue with</span>
+                        <div class="divider-line"></div>
+                    </div>
+
+                    <button type="button" class="btn-google">
+                        <div class="g-badge">G</div>
+                        Continue with Google
+                    </button>
+
+                    <div class="card-footer-note">
+                        Don't have an account?&nbsp;
+                        <label class="switch-label" for="tab-signup">Sign up free →</label>
+                    </div>
+
+                </div>
+                <!-- /panel-login -->
+
+
+                <!-- ────────────────────────────
+                     SIGN UP  ·  4 fields
+                ──────────────────────────── -->
+                <div class="panel panel-signup">
+
+                    <div class="panel-header">
+                        <h2>Create account ✨</h2>
+                        <p>Join Supabase and start building today</p>
+                    </div>
+
+                    <!-- 1. Full name -->
+                    <div class="field">
+                        <label for="signup-name">Full name</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">🙂</span>
+                            <input
+                                type="text"
+                                id="signup-name"
+                                placeholder="John Doe"
+                                autocomplete="name"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- 2. Email -->
+                    <div class="field">
+                        <label for="signup-email">Email address</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">✉️</span>
+                            <input
+                                type="email"
+                                id="signup-email"
+                                placeholder="you@example.com"
+                                autocomplete="email"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- 3. Password -->
+                    <div class="field">
+                        <label for="signup-password">Password</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">🔒</span>
+                            <input
+                                type="password"
+                                id="signup-password"
+                                placeholder="Min. 8 characters"
+                                autocomplete="new-password"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- 4. Confirm password -->
+                    <div class="field">
+                        <label for="signup-confirm">Confirm password</label>
+                        <div class="input-wrap">
+                            <span class="input-icon">🛡️</span>
+                            <input
+                                type="password"
+                                id="signup-confirm"
+                                placeholder="Repeat your password"
+                                autocomplete="new-password"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-primary">Create Account</button>
+
+                    <div class="divider">
+                        <div class="divider-line"></div>
+                        <span>or sign up with</span>
+                        <div class="divider-line"></div>
+                    </div>
+
+                    <button type="button" class="btn-google">
+                        <div class="g-badge">G</div>
+                        Sign up with Google
+                    </button>
+
+                    <div class="card-footer-note">
+                        Already have an account?&nbsp;
+                        <label class="switch-label" for="tab-login">← Sign in</label><br>
+                        By signing up you agree to our
+                        <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a>
+                    </div>
+
+                </div>
+                <!-- /panel-signup -->
+
+            </div>
+            <!-- /panels -->
+
+        </div>
+        <!-- /auth-card -->
+
+    </div>
+    <!-- /auth-wrapper -->
+
+</body>
+</html>

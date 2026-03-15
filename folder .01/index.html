@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase — Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+
+<body>
+
+    <!-- PAGE TITLE -->
+    <div class="page-title">
+        <div class="logo-row">
+            <div class="logo-icon">⚡</div>
+            <h1><span>Supa</span>base</h1>
+        </div>
+        <p>Practice Day 1 — Authentication</p>
+    </div>
+
+    <!-- ── AUTH SECTION ── -->
+    <div id="auth-section">
+
+        <!-- Glowing top line applied via ::before -->
+
+        <div class="card-header">
+            <h2>Welcome back 👋</h2>
+            <p>Sign in to your account to continue</p>
+        </div>
+
+        <!-- TABS -->
+        <div class="auth-tabs">
+            <button class="tab-btn active" id="tabLogin"  onclick="switchTab('login')">Sign In</button>
+            <button class="tab-btn"        id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- EMAIL FIELD -->
+        <div class="field">
+            <label for="email">Email address</label>
+            <div class="input-wrap">
+                <span class="input-icon">✉️</span>
+                <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+            </div>
+        </div>
+
+        <!-- PASSWORD FIELD -->
+        <div class="field">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+                <button class="toggle-pw" onclick="togglePassword()" title="Show / hide password" type="button">👁️</button>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD -->
+        <div class="forgot-row" id="forgotRow">
+            <button class="forgot-link" onclick="showToast('Password reset email sent! 📧', 'success')">Forgot password?</button>
+        </div>
+
+        <!-- PRIMARY CTA -->
+        <button type="button" class="btn-primary" id="authBtn" onclick="handleAuth()">
+            Sign In
+        </button>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">or continue with</span>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- GOOGLE -->
+        <button type="button" class="btn-google" onclick="handleGoogle()">
+            <div class="google-logo">G</div>
+            Continue with Google
+        </button>
+
+        <div class="card-footer">
+            By signing in you agree to our
+            <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a>
+        </div>
+    </div>
+
+    <!-- ── LOGGED-IN USER SECTION ── -->
+    <div id="user-section" class="hidden">
+        <div class="user-avatar">👤</div>
+        <h3>Welcome back, <span id="user-email">user@example.com</span></h3>
+        <div class="user-badge">✓ Authenticated</div>
+
+        <div class="user-name-field">
+            <label for="username">Display name</label>
+            <div class="input-wrap">
+                <span class="input-icon">🙂</span>
+                <input type="text" id="username" placeholder="Enter your display name">
+            </div>
+        </div>
+
+        <button id="logoutbtn" class="btn-logout" onclick="handleLogout()">
+            ⬡ &nbsp;Sign out
+        </button>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- SUPABASE SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

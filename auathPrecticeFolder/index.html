@@ -8,11 +8,9 @@
     <style>
         body {
             background-image: url(https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg?cs=srgb&dl=pexels-pixabay-531880.jpg&fm=jpg);
-            /* text-align: center; */
             margin: 0px auto;
             color: aliceblue;
             font-family: Arial, sans-serif;
-
         }
 
         h1 {
@@ -23,13 +21,12 @@
         #auth-section {
             display: flex;
             flex-direction: column;
+            align-self: center;
             gap: 10px;
-            /* justify-content: baseline; */
-            /* align-items: center; */
             margin: 0px auto;
             height: auto;
-            padding: 30px;
-            width: 190px;
+            padding: 40px;
+            width: 250px;
             border-radius: 10px;
             border: 2px solid white;
             background-color: rgba(240, 248, 255, 0.502);
@@ -37,7 +34,6 @@
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             color: white;
@@ -47,7 +43,6 @@
             padding: 6px;
             border-radius: 5px;
             border: 2px solid rgb(248, 248, 248);
-
         }
 
         button {
@@ -61,7 +56,6 @@
         .google {
             background-color: aliceblue;
             color: rgba(0, 0, 0, 0.808);
-            /* background-color: rgb(54, 54, 193); */
         }
 
         .hidden {
@@ -75,14 +69,13 @@
 
     <div id="auth-section">
         <h1>welcome</h1>
-        <!-- <form action="" id="authForm"> -->
         <label for="email">Enter your Email</label>
         <input type="email" id="email" placeholder="contact@example.com">
         <label for="password">password</label>
         <input type="password" id="password" placeholder="pasword">
-        <button type="button">log In</button>
-        <button type="button" class="google">contineu with google</button>
-        <!-- </form> -->
+        <button type="button" id="lsignUpWithEmail">signup</button>
+        <button type="button" id="logInBtn">LogIn</button>
+        <button type="button" class="google" id="logInWithGoogle">contineu with google</button>
     </div>
 
     <!-- loged user -->
@@ -95,14 +88,58 @@
     <script src="https://unpkg.com/@supabase/supabase-js"></script>
 
     <script>
-        const SUPABASE_URL = "https://smdomndufuewmhspepjh.supabase.co"
-        const SUPABASE_KEY = "sb_publishable_TT3VnAi86tpbLHJ07DC4aQ_BxkxYbB-"
-        const client = supabse.creatClient(SUPABASE_URL, SUPABASE_KEY)
+        const SUPABASE_URL = "https://vtsmcabpewlzoolbpvpb.supabase.co"
+        const SUPABASE_KEY = "sb_publishable_Y7AXOMS7OXm1LthZYjX61g_hWnzVrwf"
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-        // DOM menipulation //
+        // DOM manipulation
         const authSection = document.getElementById("auth-section")
         const userSection = document.getElementById("user-section")
-        const userEmail = document.getElementById("email")
+        const userEmailSpan = document.getElementById("user-email")
+
+        // signup with email
+        document.getElementById("lsignUpWithEmail").addEventListener("click", async () => {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const { error } = await client.auth.signUp({ email, password })
+            if (error) alert(error.message)
+            else showUser()
+        })
+
+        // login with email
+        document.getElementById("logInBtn").addEventListener("click", async () => {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const { error } = await client.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message)
+            else showUser()
+        })
+
+        // logIn with google
+        document.getElementById("logInWithGoogle").addEventListener("click", async () => {
+            const { error } = await client.auth.signInWithOAuth({ provider: 'google' });
+            if (error) alert(error.message);  // FIX 1: "massage" → "message"
+            else showUser()
+        })
+
+        // logOut
+        document.getElementById("logoutbtn").addEventListener("click", async () => {
+            const { error } = await client.auth.signOut();
+            authSection.classList.remove("hidden");  // FIX 2: "hiddon" → "hidden"
+            userSection.classList.add("hidden");
+        })
+
+        // showUser function
+        async function showUser() {
+            const { data } = await client.auth.getUser()
+            console.log(data);
+            if (data.user) {
+                authSection.classList.add("hidden");
+                userSection.classList.remove("hidden");
+                userEmailSpan.textContent = data.user.email;
+            }
+        }  // FIX 3: added missing closing brace for function
+
     </script>
 </body>
 
